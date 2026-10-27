@@ -1,16 +1,67 @@
 -- AetherHUD minimap: Aion's round map in a gold ring with a north gem, the zone, your
 -- coordinates and the time on a glass plate beneath it. The stock border, zoom buttons,
 -- day/night dial and world-map button go; the mouse wheel zooms.
+--
+-- The map itself stays as the game made it (its parent, layer, level and size): the client
+-- draws your arrow and the map's icons along with it, and they went missing when 2.0 moved
+-- the map into a frame of its own. Its whole cluster follows our frame instead.
 
 local A = AetherHUD
 local C = A.C
 
-local SIZE = 150
+local SIZE, RING
+local holder, spot, plate, zone, coords, clock
+local cluster -- what we move: the map's own parent (MinimapCluster), else the map
 
-local holder, zone, coords, clock
+-- Cut the zone to the room the plate has left, at a character's edge (names can be UTF-8).
+local function FitZone(full)
+	local room = plate:GetWidth() - 24 - (clock:GetStringWidth() or 0) - (coords:GetStringWidth() or 0)
+	if room < 30 then
+		room = 30
+	end
+	if zone.aFull == full and zone.aRoom == room then
+		return
+	end
+	zone.aFull, zone.aRoom = full, room
+	zone:SetText(full)
+	local cut = string.len(full)
+	while cut > 1 and (zone:GetStringWidth() or 0) > room do
+		repeat
+			cut = cut - 1
+			local b = string.byte(full, cut + 1)
+		until cut <= 1 or not (b and b >= 128 and b < 192)
+		zone:SetText(string.sub(full, 1, cut) .. "...")
+	end
+end
+
+-- The cluster takes our frame's size (only the mover's wheel changes it).
+local function Follow()
+	local s = holder:GetEffectiveScale() / cluster:GetParent():GetEffectiveScale()
+	if math.abs((cluster:GetScale() or 1) - s) > 0.001 then
+		cluster:SetScale(s)
+	end
+end
+
+-- Place the cluster so that its map's centre lands on our spot.
+local function Anchor()
+	local point, rel, relPoint, x, y
+	if Minimap.GetPoint then
+		point, rel, relPoint, x, y = Minimap:GetPoint(1)
+	end
+	cluster:ClearAllPoints()
+	if cluster == Minimap then
+		Minimap:SetPoint("CENTER", spot, "CENTER", 0, 0)
+	elseif point == "CENTER" and (rel == nil or rel == cluster) then
+		cluster:SetPoint(relPoint or "CENTER", spot, "CENTER", -(x or 0), -(y or 0))
+	else
+		local mx, my = Minimap:GetCenter()
+		local cx, cy = cluster:GetCenter()
+		cluster:SetPoint("CENTER", spot, "CENTER", (cx or 0) - (mx or 0), (cy or 0) - (my or 0))
+	end
+end
 
 local function Update()
-	A.SetText(zone, GetMinimapZoneText and GetMinimapZoneText() or "")
+	Follow()
 	local x, y = 0, 0
 	if GetPlayerMapPosition then
 		x, y = GetPlayerMapPosition("player")
@@ -21,25 +72,32 @@ local function Update()
 		A.SetText(coords, "")
 	end
 	A.SetText(clock, date and date("%H:%M") or "")
+	FitZone(GetMinimapZoneText and GetMinimapZoneText() or "")
 end
 
 local function Init()
 	if not A.On("minimap") or not Minimap then
 		return
 	end
+	cluster = Minimap:GetParent()
+	if not cluster or cluster == UIParent or not cluster:GetParent() then
+		cluster = Minimap
+	end
+	SIZE = math.floor((Minimap:GetWidth() or 0) + 0.5)
+	if SIZE < 60 then
+		SIZE = 140
+	end
+	RING = math.floor(SIZE * 128 / 106 + 0.5)
+
 	holder = CreateFrame("Frame", "AetherHUDMinimap", A.root)
 	holder:SetFrameStrata("LOW")
-	holder:SetWidth(SIZE + 20)
-	holder:SetHeight(SIZE + 44)
+	holder:SetWidth(RING)
+	holder:SetHeight(RING + 28)
+	spot = CreateFrame("Frame", nil, holder)
+	spot:SetWidth(SIZE)
+	spot:SetHeight(SIZE)
+	spot:SetPoint("CENTER", holder, "TOP", 0, -RING / 2)
 
-	-- the map itself, moved into our holder
-	Minimap:SetParent(holder)
-	Minimap:ClearAllPoints()
-	Minimap:SetPoint("TOP", holder, "TOP", 0, -10)
-	Minimap:SetWidth(SIZE)
-	Minimap:SetHeight(SIZE)
-	Minimap:SetFrameStrata("LOW")
-	Minimap:SetFrameLevel(holder:GetFrameLevel() + 2)
 	if MinimapCluster then
 		MinimapCluster:EnableMouse(false)
 	end
@@ -58,28 +116,35 @@ local function Init()
 		end
 	end)
 
-	-- a dark disc behind, the gold ring and the north gem over it
-	local disc = A.Tex(holder, "BACKGROUND", A.MEDIA .. "glow")
-	disc:SetPoint("CENTER", Minimap, "CENTER", 0, 0)
+	-- a dark disc under the map, the gold ring and the north gem over it, in the map's layer
+	local strata = Minimap:GetFrameStrata() or "LOW"
+	local level = Minimap:GetFrameLevel() or 1
+	local under = CreateFrame("Frame", nil, holder)
+	under:SetFrameStrata(strata)
+	under:SetFrameLevel(math.max(0, level - 1))
+	under:SetAllPoints(holder)
+	local disc = A.Tex(under, "BACKGROUND", A.MEDIA .. "glow")
+	disc:SetPoint("CENTER", spot, "CENTER", 0, 0)
 	disc:SetWidth(SIZE + 40)
 	disc:SetHeight(SIZE + 40)
 	disc:SetVertexColor(0, 0, 0, 0.85)
 	local over = CreateFrame("Frame", nil, holder)
+	over:SetFrameStrata(strata)
+	over:SetFrameLevel(level + 3)
 	over:SetAllPoints(holder)
-	over:SetFrameLevel(Minimap:GetFrameLevel() + 3)
-	local ring = A.Tex(over, "ARTWORK", A.MEDIA .. "ring")
-	ring:SetPoint("CENTER", Minimap, "CENTER", 0, 0)
-	ring:SetWidth(SIZE * 128 / 106)
-	ring:SetHeight(SIZE * 128 / 106)
+	local ring = A.Tex(over, "BORDER", A.MEDIA .. "ring")
+	ring:SetPoint("CENTER", spot, "CENTER", 0, 0)
+	ring:SetWidth(RING)
+	ring:SetHeight(RING)
 	ring:SetVertexColor(C.gold[1], C.gold[2], C.gold[3], 1)
-	local glint = A.Tex(over, "OVERLAY", A.MEDIA .. "glow")
+	local glint = A.Tex(over, "ARTWORK", A.MEDIA .. "glow")
 	glint:SetBlendMode("ADD")
-	glint:SetPoint("CENTER", Minimap, "TOP", 0, -2)
+	glint:SetPoint("CENTER", spot, "TOP", 0, -2)
 	glint:SetWidth(70)
 	glint:SetHeight(18)
 	glint:SetVertexColor(C.aether[1], C.aether[2], C.aether[3], 0.45)
 	local north = A.Diamond(over, 13, C.gold, "OVERLAY")
-	north:SetPoint("CENTER", Minimap, "TOP", 0, -1)
+	north:SetPoint("CENTER", spot, "TOP", 0, -1)
 	local n = A.Text(over, 8, true)
 	A.Font(n, 8, true, "")
 	n:SetPoint("CENTER", north, "CENTER", 0, 0)
@@ -87,12 +152,11 @@ local function Init()
 	n:SetTextColor(0.15, 0.1, 0.02)
 	n:SetShadowOffset(0, 0)
 
-	-- the plate: zone, coordinates, time
-	local plate = A.Panel(nil, holder, SIZE + 20, 22, { bracket = 5, noGlint = true })
+	-- the plate: zone, coordinates, time (the zone is cut, never wrapped)
+	plate = A.Panel(nil, holder, RING, 22, { bracket = 5, noGlint = true })
 	plate:SetPoint("BOTTOM", holder, "BOTTOM", 0, 0)
 	zone = A.Text(plate, 10, true)
 	zone:SetPoint("LEFT", plate, "LEFT", 7, 0)
-	zone:SetWidth(SIZE - 70)
 	zone:SetJustifyH("LEFT")
 	zone:SetTextColor(C.gold[1], C.gold[2], C.gold[3])
 	clock = A.Text(plate, 10)
@@ -109,12 +173,12 @@ local function Init()
 	}
 	for i = 1, table.getn(spots) do
 		local s = spots[i]
-		local f = getglobal(s[1])
-		if f then
-			f:SetParent(over)
-			f:ClearAllPoints()
-			f:SetPoint("CENTER", Minimap, s[2], s[3], s[4])
-			f:SetScale(0.8)
+		local fr = getglobal(s[1])
+		if fr then
+			fr:SetParent(over)
+			fr:ClearAllPoints()
+			fr:SetPoint("CENTER", spot, s[2], s[3], s[4])
+			fr:SetScale(0.8)
 		end
 	end
 
@@ -131,6 +195,7 @@ local function Init()
 	A.RegisterMover("minimap", holder, "Minimap", function(fr)
 		fr:SetPoint("TOPRIGHT", A.root, "TOPRIGHT", -14, -8)
 	end)
+	Anchor()
 	Update()
 	A.Every(0.5, Update)
 end

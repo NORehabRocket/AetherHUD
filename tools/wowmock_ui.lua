@@ -268,8 +268,16 @@ function GetInventorySlotInfo(name)
 	end
 	return id, "Interface\\PaperDoll\\UI-PaperDoll-Slot-" .. name
 end
-function GetInventoryItemTexture(unit, id) local e = MOCK.equip[id] return e and e.tex end
-function GetInventoryItemLink(unit, id) local e = MOCK.equip[id] return e and e.link end
+-- another hero's gear: MOCK.inspected[name][id], known only once NotifyInspect asked for it
+local function Gear(unit)
+	if unit == "player" then
+		return MOCK.equip
+	end
+	local name = UnitName(unit)
+	return (name and MOCK.notified == name and MOCK.inspected and MOCK.inspected[name]) or {}
+end
+function GetInventoryItemTexture(unit, id) local e = Gear(unit)[id] return e and e.tex end
+function GetInventoryItemLink(unit, id) local e = Gear(unit)[id] return e and e.link end
 function GetInventoryItemCooldown() return 0, 0, 1 end
 function PickupInventoryItem(id) MOCK.pickedInv = id end
 function UseInventoryItem(id) MOCK.usedInv = id end
@@ -307,3 +315,51 @@ LOOT_ITEM_SELF_MULTIPLE = "You receive loot: %sx%d."
 LOOT_ITEM_PUSHED_SELF = "You receive item: %s."
 LOOT_ITEM_PUSHED_SELF_MULTIPLE = "You receive item: %sx%d."
 LOOT_ITEM_CREATED_SELF = "You create: %s."
+
+------------------------------------------------------------------------
+-- Unit menus (UIDropDownMenu + UnitPopup) and inspecting
+------------------------------------------------------------------------
+
+RAID_TARGET_ICON = "Raid Target Icon"
+UIDROPDOWNMENU_OPEN_MENU = nil
+UIDROPDOWNMENU_INIT_MENU = nil
+DropDownList1 = F("Button", "DropDownList1")
+DropDownList1.__w, DropDownList1.__h = 120, 160
+DropDownList1:Hide()
+function UIDropDownMenu_Initialize(frame, fn, mode)
+	assert(frame:GetName(), "a dropdown needs a name")
+	frame.initialize, frame.displayMode = fn, mode
+	UIDROPDOWNMENU_INIT_MENU = frame:GetName()
+	fn(1)
+end
+function ToggleDropDownMenu(level, value, frame, anchor, x, y)
+	assert(type(anchor) == "string" and getglobal(anchor), "ToggleDropDownMenu: anchor by frame name")
+	if DropDownList1:IsShown() and UIDROPDOWNMENU_OPEN_MENU == frame:GetName() then
+		DropDownList1:Hide()
+		return
+	end
+	DropDownList1:Hide()
+	UIDROPDOWNMENU_OPEN_MENU = frame:GetName()
+	MOCK.menu = nil
+	UIDropDownMenu_Initialize(frame, frame.initialize, nil, level)
+	DropDownList1:ClearAllPoints()
+	DropDownList1:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", x, y)
+	DropDownList1:Show()
+end
+function CloseDropDownMenus() DropDownList1:Hide() end
+function UnitPopup_ShowMenu(dropdown, which, unit, name)
+	assert(getglobal(UIDROPDOWNMENU_INIT_MENU) == dropdown, "UnitPopup needs the dropdown being initialised")
+	dropdown.which, dropdown.unit = which, unit
+	MOCK.menu = { which = which, unit = unit, name = name }
+end
+function GetCursorPosition() return 640, 120 end
+function UnitInParty(u) return string.find(u, "^party%d") and 1 or nil end
+function CanInspect(u) return UnitIsPlayer(u) and not UnitIsUnit(u, "player") and 1 or nil end
+function NotifyInspect(u) MOCK.notified = UnitName(u) end
+function ClearInspectPlayer() MOCK.notified = nil end
+function InspectUnit(u) MOCK.stockInspect = u end
+function GetGuildInfo(u) local n = UnitName(u) return MOCK.guilds and MOCK.guilds[n], "Officer", 1 end
+function IsControlKeyDown() return MOCK.ctrl end
+function DressUpItemLink(link) MOCK.dressedUp = link end
+BenillaOptionsFrame = F("Frame", "BenillaOptionsFrame")
+BenillaOptionsFrame:Hide()

@@ -241,7 +241,7 @@ errs = errorsSoFar()
 MOCK.Slash("/aether", "unlock")
 MOCK.Run(1)
 local overlays = find(AetherHUDRoot, function(o) return o.__kind == "Button" and o.__strata == "DIALOG" end)
-CHECK("unlock shows a mover per frame (" .. table.getn(overlays) .. ")", table.getn(overlays) == 18)
+CHECK("unlock shows a mover per frame (" .. table.getn(overlays) .. ")", table.getn(overlays) == 19) -- 2.1: the inspect window
 for _, o in ipairs(overlays) do
 	MOCK.Script(o, "OnDragStart")
 	MOCK.Script(o, "OnDragStop")
@@ -547,13 +547,56 @@ SELECTED_DOCK_FRAME = ChatFrame1
 ChatFrameEditBox:Show()
 CHECK("chat: input line lights up", ChatFrameEditBox.edge[1].aR == AetherHUD.C.aether[1])
 
--- minimap
+-- minimap: the map stays the game's (the client draws your arrow and its icons with it);
+-- its cluster follows our ring
 MOCK.Run(0.6)
-CHECK("minimap: in our ring", Minimap.__parent == AetherHUDMinimap)
+CHECK("minimap: the map stays in its cluster", Minimap.__parent == MinimapCluster)
+CHECK("minimap: its layer, level and size untouched", not Minimap.__strataSet and not Minimap.__levelSet and Minimap.__w == 140)
+local cp = MinimapCluster.__points[1]
+CHECK("minimap: the cluster puts its map on our ring", cp and cp[1] == "TOP" and cp[2] and cp[2].__parent == AetherHUDMinimap
+	and cp[4] == -9 and cp[5] == 92, cp and (tostring(cp[1]) .. " " .. tostring(cp[4]) .. "," .. tostring(cp[5])))
 CHECK("minimap: stock border gone", not MinimapBorder:IsShown())
 CHECK("minimap: zone, coordinates and time", hasText(AetherHUDMinimap, "Goldshire") and hasText(AetherHUDMinimap, "42, 65"))
 MOCK.Script(Minimap, "OnMouseWheel", 1)
 CHECK("minimap: wheel zooms", Minimap:GetZoom() == 1)
+local stockZone = GetMinimapZoneText
+GetMinimapZoneText = function() return "The Jasperlode Mine Depths" end
+MOCK.Run(0.6)
+local zfs = find(AetherHUDMinimap, function(o) return o.__kind == "FontString" and o.__text and string.find(o.__text, "Jasper", 1, true) end)[1]
+CHECK("minimap: a long zone name is cut, not wrapped", zfs and string.find(zfs.__text, "...", 1, true) and zfs:GetStringWidth() <= 169 - 24 - 66,
+	zfs and zfs.__text)
+GetMinimapZoneText = stockZone
+AetherHUD.db.fscale.minimap = 1.2
+AetherHUD.Place("minimap")
+MOCK.Run(0.6)
+CHECK("minimap: the cluster takes our size", math.abs(MinimapCluster:GetScale() - 1.2) < 0.001, MinimapCluster:GetScale())
+AetherHUD.db.fscale.minimap = nil
+AetherHUD.Place("minimap")
+MOCK.Run(0.6)
+
+-- the clock's boss diamonds: shadow and gem on layers of their own (the client draws a shared
+-- layer in no fixed order, so they flickered)
+local shadows, gems, blackGems = 0, 0, 0
+for _, o in ipairs(find(AetherHUDChrono, function(o) return o.__kind == "Texture" and o.__tex == "Interface\\AddOns\\AetherHUD\\media\\diamond" end)) do
+	local black = o.__color and o.__color[1] == 0 and o.__color[2] == 0 and o.__color[3] == 0
+	if o.__layer == "BORDER" and black then
+		shadows = shadows + 1
+	elseif o.__layer == "OVERLAY" then
+		gems = gems + 1
+		if black then
+			blackGems = blackGems + 1
+		end
+	end
+end
+CHECK("clock: diamonds and shadows apart", shadows >= 5 and gems >= 5 and blackGems == 0, shadows .. "/" .. gems .. "/" .. blackGems)
+
+-- an empty skill socket shows no icon (the client's missing-icon art is a red slash)
+MOCK.actions[5] = nil
+MOCK.Run(0.5)
+local s5 = find(AetherHUDSkills, function(o) return o.__kind == "Button" and o.slot == 5 end)[1]
+local icon5 = s5 and find(s5, function(o) return o.__kind == "Texture" and o.__layer == "BORDER" end)[1]
+CHECK("skill bar: an empty socket shows no icon", icon5 and icon5.__alpha == 0, icon5 and icon5.__alpha)
+MOCK.actions[5] = true
 
 -- inventory
 MOCK.bags[0][1] = { tex = "Interface\\Icons\\INV_Misc_Coin_01", count = 5, quality = 1, link = "|cffffffff|Hitem:1:0:0:0|h[Coins]|h|r" }
@@ -574,6 +617,8 @@ local epicRim = find(sockets[2], function(o) return o.__tex == "Interface\\AddOn
 CHECK("cube: epic rim", epicRim and epicRim.__color[1] > 0.6 and epicRim.__color[3] > 0.9)
 local lockedIcon = sockets[19] and find(sockets[19], function(o) return o.__layer == "BORDER" and o.__kind == "Texture" end)[1]
 CHECK("cube: locked item dimmed", lockedIcon and lockedIcon.__alpha < 0.5)
+local emptyIcon = sockets[3] and find(sockets[3], function(o) return o.__layer == "BORDER" and o.__kind == "Texture" end)[1]
+CHECK("cube: an empty slot shows no icon, not a missing texture", emptyIcon and emptyIcon.__alpha == 0 and emptyIcon.__tex ~= nil)
 CHECK("cube: money", hasText(AetherHUDBags, "12") and hasText(AetherHUDBags, "34") and hasText(AetherHUDBags, "56"))
 arg1 = "LeftButton"
 MOCK.Script(sockets[2], "OnClick", "LeftButton")
@@ -629,6 +674,116 @@ MOCK.party = nil
 MOCK.pet = nil
 MOCK.Run(0.3)
 CHECK("no party, no frames", not hasText(AetherHUDParty, "Friendo") and not AetherHUDPet:IsVisible())
+
+-- unit menus: the game's own, on our frames
+MOCK.Script(AetherHUDHero, "OnMouseUp", "RightButton")
+CHECK("hero: right-click opens the game's menu", DropDownList1:IsShown() and MOCK.menu and MOCK.menu.which == "SELF" and MOCK.menu.unit == "player",
+	MOCK.menu and MOCK.menu.which)
+local lp = DropDownList1.__points[1]
+CHECK("menu: at the cursor", lp and lp[2] == UIParent and lp[4] == 640, lp and tostring(lp[4]))
+MOCK.Script(AetherHUDHero, "OnMouseUp", "RightButton")
+CHECK("menu: right-click again closes it", not DropDownList1:IsShown())
+MOCK.Script(AetherHUDHero, "OnMouseUp", "LeftButton")
+CHECK("hero: left-click targets you", MOCK.targetUnit == "player")
+
+MOCK.party = { { name = "Jaina", hp = 90, hpm = 1500, level = 20, class = "Mage", token = "MAGE", race = "Human", player = true, friend = true } }
+MOCK.pet = { name = "Wolf", hp = 80, hpm = 100 }
+MOCK.guilds = { Jaina = "Kirin Tor" }
+MOCK.inspected = { Jaina = {
+	[1] = { tex = "Interface\\Icons\\INV_Helmet_02", link = "|cffa335ee|Hitem:20:0:0:0|h[Crown of Frost]|h|r" },
+	[16] = { tex = "Interface\\Icons\\INV_Staff_01", link = "|cff0070dd|Hitem:21:0:0:0|h[Staff of Jordan]|h|r" },
+} }
+MOCK.Run(0.5)
+MOCK.Script(AetherHUDParty1, "OnMouseUp", "RightButton")
+CHECK("party: right-click, the party menu", MOCK.menu and MOCK.menu.which == "PARTY" and MOCK.menu.unit == "party1", MOCK.menu and MOCK.menu.which)
+MOCK.Script(AetherHUDPet, "OnMouseUp", "RightButton")
+CHECK("pet: right-click, the pet menu (another frame's opens anew)", DropDownList1:IsShown() and MOCK.menu.which == "PET")
+CloseDropDownMenus()
+
+-- inspecting: the menu's Inspect calls InspectUnit
+InspectUnit("party1")
+MOCK.Run(0.6)
+CHECK("inspect: our window, not the stock one", AetherHUDInspect:IsShown() and MOCK.stockInspect == nil)
+CHECK("inspect: asks the server for their gear", MOCK.notified == "Jaina")
+CHECK("inspect: name, guild and class", hasText(AetherHUDInspect, "Jaina") and hasText(AetherHUDInspect, "Kirin Tor")
+	and hasText(AetherHUDInspect, "Mage"), table.concat(shownTexts(AetherHUDInspect), " / "))
+CHECK("inspect: their gear by name", hasText(AetherHUDInspect, "Crown of Frost") and hasText(AetherHUDInspect, "Staff of Jordan"))
+local theirHelm
+for _, o in ipairs(find(AetherHUDInspect, function(o) return o.__kind == "Button" and o.inv == 1 and o.slotName == "HeadSlot" end)) do
+	if find(o, function(r) return r.__tex == "Interface\\AddOns\\AetherHUD\\media\\slot" end)[1] then
+		theirHelm = o
+	end
+end
+local theirRim = theirHelm and find(theirHelm, function(o) return o.__tex == "Interface\\AddOns\\AetherHUD\\media\\slot" end)[1]
+CHECK("inspect: their gear rimmed in its quality", theirRim and theirRim.__color[1] > 0.6 and theirRim.__color[3] > 0.9)
+CHECK("inspect: health and gear count", hasText(AetherHUDInspect, "1,500") and hasText(AetherHUDInspect, "2 / 19"))
+CHECK("inspect: no run section outside the party meter", not hasText(AetherHUDInspect, "T H I S"))
+MOCK.Addon("AZSPARTY", "Jaina,mage,48000,200,0.58,Frostbolt,120;Utther,mage,35000,150,0.42,Blizzard,90")
+MOCK.Run(0.6)
+CHECK("inspect: what they did this run", hasText(AetherHUDInspect, "T H I S") and hasText(AetherHUDInspect, "48,000")
+	and hasText(AetherHUDInspect, "58%") and hasText(AetherHUDInspect, "Frostbolt"), table.concat(shownTexts(AetherHUDInspect), " / "))
+MOCK.shift = true
+ChatFrameEditBox:Show()
+MOCK.Script(theirHelm, "OnClick", "LeftButton")
+MOCK.shift = false
+CHECK("inspect: shift-click links their item", ChatFrameEditBox.__inserted and string.find(ChatFrameEditBox.__inserted, "Crown of Frost", 1, true))
+ChatFrameEditBox:Hide()
+AetherHUDInspect:Hide()
+CHECK("inspect: closing lets the server go", MOCK.notified == nil)
+
+-- from the target frame: a friend gets an Inspect button, which keeps to them as party1
+MOCK.target = MOCK.party[1]
+MOCK.Fire("PLAYER_TARGET_CHANGED")
+MOCK.Run(0.3)
+local inspectButton = find(AetherHUDTarget, function(o) return o.__kind == "Button" and o.text and o.text.__text == "INSPECT" end)[1]
+CHECK("target: Inspect button for another hero", inspectButton and inspectButton:IsVisible())
+inspectButton:Click()
+MOCK.Run(0.3)
+CHECK("target: it inspects them", AetherHUDInspect:IsShown() and MOCK.notified == "Jaina")
+MOCK.target = { name = "Kobold Vermin", hp = 10, hpm = 10 }
+MOCK.Fire("PLAYER_TARGET_CHANGED")
+MOCK.Run(0.6)
+CHECK("inspect: stays on a party member when the target moves on", AetherHUDInspect:IsShown() and hasText(AetherHUDInspect, "Jaina"))
+CHECK("target: no Inspect button on an enemy", not inspectButton:IsVisible())
+MOCK.Script(AetherHUDTarget, "OnMouseUp", "RightButton")
+CHECK("target: an enemy gets the raid-mark menu", MOCK.menu and MOCK.menu.which == "RAID_TARGET_ICON", MOCK.menu and MOCK.menu.which)
+CloseDropDownMenus()
+InspectUnit("target")
+CHECK("inspect: an enemy goes to the stock call", MOCK.stockInspect == "target")
+AetherHUDInspect:Hide()
+InspectUnit("player")
+CHECK("inspect: yourself opens your character window", AetherHUDCharacter:IsShown())
+AetherHUDCharacter:Hide()
+MOCK.target = nil
+MOCK.party = nil
+MOCK.pet = nil
+MOCK.Fire("PLAYER_TARGET_CHANGED")
+MOCK.Run(0.3)
+
+-- the game's own run settings and Options window, from ours
+AetherHUD.ToggleOptions()
+CHECK("options: the game's run settings", hasText(AetherHUDOptions, "store level-ups") and hasText(AetherHUDOptions, "caches")
+	and not hasText(AetherHUDOptions, "spell effects"))
+local storeRow
+for _, o in ipairs(find(AetherHUDOptions, function(o) return o.__kind == "Button" end)) do
+	if find(o, function(r) return r.__kind == "FontString" and r.__text and string.find(r.__text, "store level-ups", 1, true) end)[1] then
+		storeRow = o
+	end
+end
+storeRow:Click()
+CHECK("options: store level-ups through the game's call", MOCK.cvars.storeLevels == "1")
+storeRow:Click()
+CHECK("options: and off again", MOCK.cvars.storeLevels == "0")
+CHECK("options: the inspect window can be switched off", hasText(AetherHUDOptions, "Inspect window"))
+local gameButton
+for _, o in ipairs(find(AetherHUDOptions, function(o) return o.__kind == "Button" end)) do
+	if o.text and o.text.__text == "Game options" then
+		gameButton = o
+	end
+end
+gameButton:Click()
+CHECK("options: Game options opens the game's window", BenillaOptionsFrame:IsShown() and not AetherHUDOptions:IsShown())
+BenillaOptionsFrame:Hide()
 
 -- the skill bar's menu buttons
 local minis = {}

@@ -285,6 +285,29 @@ def to_py(items):
     return out
 
 
+INSPECT = r"""
+MOCK.party = { { name = "Jaina", hp = 1320, hpm = 1500, level = 24, class = "Mage", token = "MAGE", race = "Human", player = true, friend = true } }
+MOCK.guilds = { Jaina = "Kirin Tor" }
+local q = { epic = "a335ee", rare = "0070dd", good = "1eff00", common = "ffffff" }
+local function it(id, icon, name, quality)
+	return { tex = "Interface\\Icons\\" .. icon, link = "|cff" .. q[quality] .. "|Hitem:" .. id .. ":0:0:0|h[" .. name .. "]|h|r" }
+end
+MOCK.inspected = { Jaina = {
+	[1] = it(1, "INV_Helmet_29", "Admiral's Hat", "epic"), [2] = it(2, "INV_Jewelry_Necklace_07", "Amulet of the Kirin Tor", "rare"),
+	[3] = it(3, "INV_Shoulder_02", "Frostweave Mantle", "rare"), [15] = it(4, "INV_Misc_Cape_05", "Onyxia Scale Cloak", "epic"),
+	[5] = it(5, "INV_Chest_Cloth_08", "Robe of the Archmage", "epic"), [9] = it(6, "INV_Bracer_07", "Frostweave Bracers", "good"),
+	[10] = it(7, "INV_Gauntlets_14", "Gloves of the Tide", "rare"), [6] = it(8, "INV_Belt_08", "Sash of Mercy", "good"),
+	[7] = it(9, "INV_Pants_08", "Leggings of Arcana", "epic"), [8] = it(10, "INV_Boots_05", "Sandals of the Insurgent", "rare"),
+	[11] = it(11, "INV_Jewelry_Ring_15", "Band of Frost", "rare"), [13] = it(12, "INV_Trinket_Naxxramas06", "Eye of Moam", "epic"),
+	[16] = it(13, "INV_Staff_13", "Staff of Jordan", "rare"), [18] = it(14, "INV_Wand_07", "Glacial Spike", "good"),
+} }
+MOCK.Run(0.3)
+MOCK.Addon("AZSPARTY", "Jaina,mage,184200,412,0.58,Frostbolt,230;Utther,shaman,131800,298,0.42,Chain Lightning,180")
+InspectUnit("party1")
+MOCK.Run(0.6)
+"""
+
+
 def main():
     exe, out = sys.argv[1], sys.argv[2]
     mode = sys.argv[3] if len(sys.argv) > 3 else "demo"
@@ -293,12 +316,14 @@ def main():
     lua.execute(th.extract_api(exe))
     th.load_addon(lua, th.toc_files())
     lua.execute('MOCK.Fire("VARIABLES_LOADED") MOCK.Fire("PLAYER_ENTERING_WORLD") MOCK.Run(0.6)')
-    if mode in ("demo", "windows"):
+    if mode in ("demo", "windows", "inspect"):
         lua.execute(WORLD)
         lua.execute(FULL)
         lua.execute('MOCK.Slash("/aether", "demo") MOCK.Run(0.2) AetherHUD.TestBanners() MOCK.Run(1.0)')
     if mode == "windows":
         lua.execute('ToggleBackpack() ToggleCharacter() MOCK.Run(0.4)')
+    elif mode == "inspect":
+        lua.execute(INSPECT)
     elif mode == "unlock":
         lua.execute('MOCK.Slash("/aether", "unlock") MOCK.Run(1.0)')
     elif mode == "options":
@@ -312,6 +337,8 @@ def main():
                 mobs.append((k.__px, k.__py, k.__mob or "normal"))
     py = to_py(lua.eval("MOCK.Layout(WorldFrame)"))
     py += to_py(lua.eval("MOCK.Layout(AetherHUDRoot)"))
+    # the map stays in the game's cluster (2.1), which follows our ring
+    py += to_py(lua.eval("MOCK.Layout({ __children = { MinimapCluster } })"))
     py += to_py(lua.eval("MOCK.Layout({ __children = { ChatFrame1, ChatFrame1Tab, ChatFrame2Tab, ChatFrameEditBox } })"))
     if lua.eval("AetherHUDNumbers ~= nil"):
         py += to_py(lua.eval("MOCK.Layout({ __children = { AetherHUDNumbers } })"))
@@ -323,7 +350,7 @@ def main():
     # one draw order across every root, as the client draws them: strata, level, layer
     py.sort(key=lambda d: (d["strata"], d["level"], d["layer"], d["seq"]))
     chat = []
-    if mode in ("demo", "windows"):
+    if mode in ("demo", "windows", "inspect"):
         chat = CHAT_LINES
     render(py, out, "AetherHUD preview (%s)" % mode, mobs, chat)
     print("wrote", out, len(py), "items")

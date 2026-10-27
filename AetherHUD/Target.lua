@@ -1,12 +1,13 @@
 -- AetherHUD target frame: what you have targeted, tagged with what it is to the run
 -- (final boss, boss, guardian, elite), its real health from AZS_TARGET and its debuffs.
+-- Right-click for the game's unit menu; another hero gets an Inspect button.
 
 local A = AetherHUD
 local C, D = A.C, A.D
 
 local W, H = 244, 50
 
-local f, tag, name, state, lvl, bar, hpText, pctText, auras
+local f, tag, name, state, lvl, bar, hpText, pctText, auras, inspectButton
 
 local KINDS = {
 	final = { "FINAL BOSS", A.C.gold, A.C.boss1, A.C.boss2 },
@@ -95,6 +96,8 @@ local function Update()
 		A.SetText(lvl, "")
 	end
 	auras:Set(TargetDebuffs(t), auras.anchor)
+	A.Show(inspectButton, A.On("inspect") and UnitExists("target") and UnitIsPlayer("target")
+		and not UnitIsUnit("target", "player") and not (CanInspect and not CanInspect("target")) and true or false)
 end
 
 local function Init()
@@ -104,6 +107,13 @@ local function Init()
 	A.Silence(TargetFrame)
 
 	f = A.Panel("AetherHUDTarget", A.root, W, H)
+	A.UnitClicks(f, "target")
+	-- another hero can be inspected from here as well as from the menu
+	inspectButton = A.GlassButton(f, "INSPECT", 60, 16, function()
+		InspectUnit("target")
+	end)
+	inspectButton:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", 0, 3)
+	inspectButton:Hide()
 
 	tag = A.Text(f, 9, true)
 	tag:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)

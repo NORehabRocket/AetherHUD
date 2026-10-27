@@ -1,6 +1,7 @@
 -- AetherHUD party and pet: your co-op friends as slim glass frames down the left (class
 -- coloured, health with the same easing trail as yours, down/offline states; click to
--- target) and your pet beside the hero frame. Replaces the stock party and pet frames.
+-- target, right-click for the game's menu) and your pet beside the hero frame. Replaces the
+-- stock party and pet frames.
 
 local A = AetherHUD
 local C = A.C
@@ -17,15 +18,11 @@ local function Member(i)
 		return m
 	end
 	m = { unit = "party" .. i }
-	local f = A.Panel(nil, holder, PW, PH, { bracket = 5 })
+	-- named: the unit menu anchors to its frame by name
+	local f = A.Panel("AetherHUDParty" .. i, holder, PW, PH, { bracket = 5 })
 	f:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, -(i - 1) * (PH + 6))
-	f:EnableMouse(true)
 	f.unit = m.unit
-	f:SetScript("OnMouseUp", function()
-		if arg1 == "LeftButton" then
-			TargetUnit(this.unit)
-		end
-	end)
+	A.UnitClicks(f, m.unit)
 	f:SetScript("OnEnter", function()
 		GameTooltip_SetDefaultAnchor(GameTooltip, this)
 		GameTooltip:SetUnit(this.unit)
@@ -129,10 +126,7 @@ local function Init()
 
 	-- the pet: a small frame on the hero frame's right
 	local pf = A.Panel("AetherHUDPet", A.root, 132, 30, { bracket = 4 })
-	pf:EnableMouse(true)
-	pf:SetScript("OnMouseUp", function()
-		TargetUnit("pet")
-	end)
+	A.UnitClicks(pf, "pet")
 	pet = { frame = pf }
 	pet.name = A.Text(pf, 10, true)
 	pet.name:SetPoint("TOPLEFT", pf, "TOPLEFT", 7, -5)

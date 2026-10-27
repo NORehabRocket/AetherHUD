@@ -1,4 +1,5 @@
--- AetherHUD options window (/aether): modules, the game's build row, size, layout.
+-- AetherHUD options window (/aether): modules, the game's build row and run settings, size,
+-- layout, and a way into the game's own Options window.
 
 local A = AetherHUD
 local C = A.C
@@ -97,6 +98,12 @@ A.OnOptionsChanged = A.RefreshOptions
 
 local ROW = 18
 
+local GAME = {
+	{ "storeLevels", "Game: store level-ups for the Level Up button" },
+	{ "cacheOnClick", "Game: buy caches only by right-clicking them" },
+	{ "noSpellEffects", "Game: no spell effects (for a slow computer)" },
+}
+
 -- A "label  [-] value [+]" line; returns the value's text.
 local function Stepper(y, label, onStep)
 	local l = A.Text(f, 11)
@@ -183,6 +190,23 @@ local function Build()
 	end, function(v)
 		A.db.numbers.heals = v
 	end)
+	-- the game's own run settings, the same ones its Options window keeps
+	for i = 1, table.getn(GAME) do
+		local cvar, label = GAME[i][1], GAME[i][2]
+		local ok, v = pcall(GetCVar, cvar)
+		if ok and v ~= nil then
+			y = y - ROW
+			Toggle(y, label, function()
+				return GetCVar(cvar) == "1"
+			end, function(on)
+				if cvar == "storeLevels" and AZS_SetStoringLevels then
+					AZS_SetStoringLevels(on)
+				else
+					SetCVar(cvar, on and "1" or "0")
+				end
+			end)
+		end
+	end
 
 	y = y - 28
 	scaleText = Stepper(y, "HUD size", function(d)
@@ -219,6 +243,16 @@ local function Build()
 	end)
 	buttons.reload = Button("Reload UI", W - 154, y, 140, function()
 		ReloadUI()
+	end)
+	y = y - 24
+	-- the game's own Options window (video, sound, controls, interface)
+	Button("Game options", 14, y, 140, function()
+		f:Hide()
+		if BenillaOptionsFrame then
+			ShowUIPanel(BenillaOptionsFrame)
+		elseif GameMenuFrame then
+			ShowUIPanel(GameMenuFrame)
+		end
 	end)
 	notice = A.Text(f, 9)
 	notice:SetPoint("BOTTOM", f, "BOTTOM", 0, 8)

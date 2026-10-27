@@ -1,4 +1,4 @@
-# AetherHUD 2.0
+# AetherHUD 2.1
 
 A complete Aion-styled interface for **Azeroth Survivors**: navy glass panels, aether-cyan
 glints, gold corner brackets, round portraits in gold bezels, diamond gems and winged
@@ -18,7 +18,7 @@ in the AddOns list; if one is still on, AetherHUD says so in chat.
 
 | Frame | Where | Replaces |
 |---|---|---|
-| Run clock: zone, clock, a boss timeline (dim = slain, red = alive, gold = final) and the next boss's countdown, red in its last 10 s | top centre | the game's clock |
+| Run clock: zone, clock, a boss timeline (a diamond for each boss at the time it comes: grey = to come, red glow = alive now, dim = slain, gold = the final boss) and the next boss's countdown, red in its last 10 s. Hover it for the list | top centre | the game's clock |
 | Boss bars: every boss alive and every awake guardian, with health, an ENRAGED glow and debuffs counting down. Click one to target it | under the clock | the game's boss bars |
 | Banners: every announcement the game makes, and new zones, as winged notices | centre | the game's banners, stock zone text |
 | System messages: errors and notices ("Not enough gold...") as a calm line that fades | under the banners | the stock red/yellow error text, raid warnings |
@@ -38,8 +38,12 @@ in the AddOns list; if one is still on, AetherHUD says so in chat.
 |---|---|---|
 | Hero frame: portrait, level gem, health with shield and damage trail, lives, buffs and debuffs (right-click a buff to cancel it). Hover for your run stats | top left | stock player frame and buffs |
 | Pet frame | beside the hero | stock pet frame |
-| Party frames: class-coloured names, health, down and offline. Click to target | left | stock party frames |
-| Target frame: what the target is to the run, its real health, its debuffs | above the skill bar | stock target frame |
+| Party frames: class-coloured names, health, down and offline | left | stock party frames |
+| Target frame: what the target is to the run, its real health, its debuffs; another hero gets an Inspect button | above the skill bar | stock target frame |
+
+Click any of these to target that unit, right-click it for the game's own unit menu, the
+one the stock frames open: whisper, invite, trade, follow, duel, inspect, raid marks, loot
+rules, promote, leave party and the rest.
 | Skill bar: your six spells and racial with cooldowns and rank gems, talent and jewelry clocks and summons above it, and four buttons: Character, Talents, Inventory, Game menu | bottom centre | stock action bar (hidden; keybinds still work) |
 | Experience bar | bottom | stock XP bar |
 
@@ -53,10 +57,18 @@ in the AddOns list; if one is still on, AetherHUD says so in chat.
   health, damage, haste and crit as headline tiles, and every number of the run on the
   right (offense, defense, utility), with what your gear adds in green. Drag gear on and
   off as usual. The other character tabs stay stock.
+* **Inspect:** another hero's gear in the same shape as your character window, rimmed in
+  its quality colour, with their name, guild, level, race and class, health, how much gear
+  they wear, and each item listed by name on the right. A party member also shows what they
+  did this run: damage, per second, their share of the party's and their top spell. Opens
+  from the unit menu's Inspect, the target frame's button, or anything else that inspects.
+  Hover an item for its tooltip, Shift-click links it, Ctrl-click tries it on. Inspecting
+  yourself opens your character window.
 * **Chat:** the stock windows in a glass panel, flat tabs (the open one in gold), a glass
   input line, Roboto text, the mouse wheel scrolls (Shift jumps to the top or bottom).
 * **Minimap:** round, in a gold ring with a north gem; zone, coordinates and time on a
-  plate beneath; the mouse wheel zooms.
+  plate beneath (a long zone name is shortened); the mouse wheel zooms. The map itself stays
+  the game's, with your arrow and its icons; AetherHUD moves its whole cluster.
 * **Tooltips, dialogs, the game menu and right-click menus** wear the same glass. A
   tooltip's edge takes the colour of its first line (item quality, enemy reaction), and
   enemies say what they are to the run.
@@ -82,7 +94,9 @@ AetherHUD turns them on, and `V` toggles them as usual.
 
 * `/aether` (or `/ahud`) opens the options: every part on or off, HUD size, number size,
   meter rows, whether full-health enemies get plates, and whether damage taken and
-  healing show as numbers.
+  healing show as numbers. It also has the game's own run settings (store level-ups for
+  the Level Up button, buy caches only by right-clicking them, no spell effects; they are
+  the same settings the game's Options window keeps) and a button to the game's Options.
 * `/aether unlock` lets you drag frames, resize one with the mouse wheel, or right-click
   it to reset it. `/aether lock` when done.
 * `/aether demo` fills every frame with a sample run (with sample combat numbers, banners

@@ -348,6 +348,19 @@ function D.Meter(tab)
 	return EMPTY, 0, 0
 end
 
+-- The party meter: a line a hero { name, class, dmg, dps, share, top, topdps }; empty alone.
+function D.PartyMeter()
+	if A.Demo() then
+		local t = math.max(1, DT())
+		return { { name = "Jaina", class = "mage", dmg = 412 * t, dps = 412, share = 0.58, top = "Frostbolt", topdps = 230 },
+			{ name = UnitName("player") or "You", class = "shaman", dmg = 298 * t, dps = 298, share = 0.42, top = "Chain Lightning", topdps = 180 } }
+	end
+	if AZS_GetPartyMeter then
+		return (AZS_GetPartyMeter()) or EMPTY
+	end
+	return EMPTY
+end
+
 function D.Stats()
 	return List(AZS_STATS)
 end

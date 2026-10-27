@@ -254,7 +254,7 @@ local function SkinPopups()
 		end
 	end
 	for _, name in ipairs({ "DropDownList1Backdrop", "DropDownList2Backdrop", "DropDownList3Backdrop",
-		"ChatMenu", "EmoteMenu", "LanguageMenu", "VoiceMacroMenu" }) do
+		"DropDownList1MenuBackdrop", "DropDownList2MenuBackdrop", "DropDownList3MenuBackdrop", "ChatMenu", "EmoteMenu", "LanguageMenu", "VoiceMacroMenu" }) do
 		local f = getglobal(name)
 		if f then
 			A.SkinFrame(f, { alpha = 0.96, bracket = 5, noGlint = true })

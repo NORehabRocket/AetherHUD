@@ -81,7 +81,8 @@ local AURA = 24
 local function AuraRow(rowIndex, max)
 	local row = A.AuraRow(f, AURA, max, 3)
 	row.anchor = function(frame, i)
-		frame:SetPoint("TOPLEFT", f, "BOTTOMLEFT", (i - 1) * (AURA + 3), -6 - (rowIndex - 1) * (AURA + 16))
+		-- from the portrait's right edge, clear of the level gem on its bezel
+		frame:SetPoint("TOPLEFT", f, "BOTTOMLEFT", 68 + (i - 1) * (AURA + 3), -6 - (rowIndex - 1) * (AURA + 16))
 	end
 	return row
 end
@@ -286,7 +287,7 @@ local function Init()
 	A.Silence(TemporaryEnchantFrame)
 
 	f = A.Panel("AetherHUDHero", A.root, W, H)
-	f:EnableMouse(true)
+	A.UnitClicks(f, "player")
 	f:SetScript("OnEnter", Tooltip)
 	f:SetScript("OnLeave", function()
 		GameTooltip:Hide()

@@ -5,7 +5,7 @@
 AetherHUD = {}
 local A = AetherHUD
 
-A.VERSION = "2.0.0"
+A.VERSION = "2.1.0"
 A.MEDIA = "Interface\\AddOns\\AetherHUD\\media\\"
 A.FLAT = "Interface\\ChatFrame\\ChatFrameBackground"
 A.SPARK = "Interface\\CastingBar\\UI-CastingBar-Spark"
@@ -73,6 +73,7 @@ A.MODULES = {
 	{ key = "minimap", label = "Minimap" },
 	{ key = "bags", label = "Inventory" },
 	{ key = "character", label = "Character window" },
+	{ key = "inspect", label = "Inspect window" },
 	{ key = "party", label = "Party and pet" },
 	{ key = "skin", label = "Tooltips and menus" },
 }
@@ -85,7 +86,7 @@ local DEFAULTS = {
 		chrono = true, bosses = true, hero = true, target = true, skills = true, xp = true,
 		tally = true, lairs = true, meter = true, banners = true, vignette = true,
 		plates = true, numbers = true, notices = true, loot = true, chat = true, minimap = true,
-		bags = true, character = true, party = true, skin = true,
+		bags = true, character = true, inspect = true, party = true, skin = true,
 	},
 	hideBuild = false,
 	hid = {},

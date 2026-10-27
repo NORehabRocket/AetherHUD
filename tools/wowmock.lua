@@ -79,6 +79,8 @@ MOCK = {
 		CombatDamage = "1", PetMeleeDamage = "1", PetSpellDamage = "1", CombatLogPeriodicSpells = "0",
 		CombatLogRangeCreature = "50", CombatLogRangeHostilePlayers = "50", CombatLogRangeHostilePlayersPets = "50",
 		CombatLogRangeParty = "50", CombatLogRangePartyPet = "50",
+		-- the game's run settings (no noSpellEffects: its options row must stay away)
+		storeLevels = "0", cacheOnClick = "0",
 	},
 	player = { name = "Utther", hp = 1800, hpm = 2400, level = 17, class = "Mage", token = "MAGE", race = "Human", xp = 100, xpm = 1000 },
 	target = nil, -- { name, hp, hpm, level, dead, player, friend, classification }
@@ -169,6 +171,12 @@ function R:SetPoint(point, rel, relPoint, x, y)
 	table.insert(self.__points, { point, rel, relPoint, x, y })
 end
 function R:ClearAllPoints() self.__points = {} self.__all = nil end
+function R:GetPoint(i)
+	local p = self.__points[i or 1]
+	if p then
+		return p[1], p[2], p[3], p[4], p[5]
+	end
+end
 function R:SetAllPoints(rel) self.__all = rel or self.__parent end
 local function fire(self, script)
 	local fn = self.__scripts and self.__scripts[script]
@@ -506,7 +514,10 @@ function UnitHealthMax(u) local d = U(u) return d and d.hpm or 0 end
 function UnitIsPlayer(u) local d = U(u) return d and (u == "player" or d.player) and 1 or nil end
 function UnitIsFriend(a, b) local d = U(b) return d and (b == "player" or d.friend) and 1 or nil end
 function UnitIsDead(u) local d = U(u) return d and d.dead and 1 or nil end
-function UnitIsUnit(a, b) return a == b end
+function UnitIsUnit(a, b)
+	local da = U(a)
+	return da ~= nil and da == U(b) and 1 or nil
+end
 function UnitPlayerControlled(u) return UnitIsPlayer(u) end
 function UnitClassification(u) local d = U(u) return d and d.classification or "normal" end
 function UnitXP() return MOCK.player.xp end

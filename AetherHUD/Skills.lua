@@ -205,9 +205,12 @@ local function Update()
 			-- no spell here (yet): an empty socket
 			local slot = i == 7 and 12 or i
 			fr.slot, fr.rank, fr.demoName = slot, nil, nil
+			-- an empty socket shows its recess only (the client's missing-icon art is a red slash)
 			local tex = HasAction and HasAction(slot) and GetActionTexture(slot)
-			sock:SetIcon(tex or "Interface\\Icons\\INV_Misc_QuestionMark")
-			A.SetAlpha(sock.icon, tex and 1 or 0.12)
+			if tex then
+				sock:SetIcon(tex)
+			end
+			A.SetAlpha(sock.icon, tex and 1 or 0)
 			sock:SetCooldown(0)
 			A.SetText(sock.rank, "")
 			A.Show(sock.gem, false)

@@ -168,7 +168,8 @@ local function Update()
 					s:SetCooldown(0)
 				end
 			else
-				A.SetTexture(s.icon, nil)
+				-- hidden, not cleared: a texture without a file shows the client's red slash
+				A.SetAlpha(s.icon, 0)
 				s:SetCount(0)
 				s:SetCooldown(0)
 				A.SetColor(s.rim, C.steel[1] * 0.6, C.steel[2] * 0.6, C.steel[3] * 0.6, 1)

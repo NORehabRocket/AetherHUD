@@ -7,7 +7,7 @@ local C, D = A.C, A.D
 local W, H = 380, 68
 local TRACK_W = 340
 
-local f, title, clock, total, phaseTag, nextLine, track, fill, spark
+local f, title, clock, total, phaseTag, nextLine, track, fill, spark, pins
 local markers = {}
 
 local PHASES = {
@@ -22,13 +22,15 @@ local function Marker(i)
 	if m then
 		return m
 	end
+	-- one layer each: the client draws textures that share a layer in no fixed order, so a
+	-- shadow beside its gem in OVERLAY flickered over it
 	m = {}
-	m.glow = A.Tex(track, "OVERLAY", A.MEDIA .. "glow")
+	m.shadow = A.Diamond(pins, 16, { 0, 0, 0 }, "BORDER")
+	m.glow = A.Tex(pins, "ARTWORK", A.MEDIA .. "glow")
 	m.glow:SetBlendMode("ADD")
 	m.glow:SetWidth(30)
 	m.glow:SetHeight(30)
-	m.shadow = A.Diamond(track, 16, { 0, 0, 0 }, "OVERLAY")
-	m.gem = A.Diamond(track, 12, C.steel, "OVERLAY")
+	m.gem = A.Diamond(pins, 12, C.steel, "OVERLAY")
 	markers[i] = m
 	return m
 end
@@ -184,6 +186,8 @@ local function Tooltip()
 	local sched = D.Schedule()
 	if table.getn(sched) > 0 then
 		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine("Boss timeline: a diamond for each boss at the time it comes", C.steel[1], C.steel[2], C.steel[3])
+		GameTooltip:AddLine("grey = to come, red glow = alive now, dim = slain, gold = final boss", C.muted[1], C.muted[2], C.muted[3])
 		for i = 1, table.getn(sched) do
 			local b = sched[i]
 			local r, g, bl = 0.75, 0.82, 0.9
@@ -240,6 +244,9 @@ local function Init()
 	spark:SetWidth(10)
 	spark:SetHeight(16)
 	spark:SetPoint("CENTER", fill, "RIGHT", 0, 0)
+	pins = CreateFrame("Frame", nil, track)
+	pins:SetAllPoints(track)
+	pins:SetFrameLevel(track:GetFrameLevel() + 2)
 
 	nextLine = A.Text(f, 10)
 	nextLine:SetPoint("TOP", track, "BOTTOM", 0, -6)
