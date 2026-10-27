@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cff61dbffAether|cffffcc66HUD|r
-## Notes: An Aion-styled HUD for Azeroth Survivors: run chronometer with a boss timeline, boss bars with debuffs, hero and target frames, quickbar, experience strip, tally, lairs, combat meter, winged banners, enemy health plates, floating combat numbers, and the rest of the UI too: inventory, character and inspect windows, chat, minimap, party frames with the game's unit menus, tooltips and menus. /aether
+## Notes: An Aion-styled HUD for Azeroth Survivors: run chronometer with a boss timeline and boss countdowns, boss bars with debuffs, hero and target frames, quickbar, experience strip, tally, lairs, combat meter, winged banners, enemy health plates, floating combat numbers, and the rest of the UI too: inventory, character and inspect windows, chat, minimap, party frames with the game's unit menus and pointers to downed allies, tooltips and menus, and run records with personal bests. /aether
 ## Author: NORehabRocket
-## Version: 2.1.0
+## Version: 2.3.0
 ## SavedVariables: AetherHUDDB
 
 Core.lua
@@ -21,6 +21,7 @@ Tally.lua
 Lairs.lua
 Meter.lua
 Banners.lua
+Warnings.lua
 Notices.lua
 Chat.lua
 Minimap.lua
@@ -28,4 +29,6 @@ Bags.lua
 Character.lua
 Inspect.lua
 Party.lua
+Rescue.lua
+Records.lua
 Options.lua

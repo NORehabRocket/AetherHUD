@@ -5,7 +5,7 @@
 AetherHUD = {}
 local A = AetherHUD
 
-A.VERSION = "2.1.0"
+A.VERSION = "2.3.0"
 A.MEDIA = "Interface\\AddOns\\AetherHUD\\media\\"
 A.FLAT = "Interface\\ChatFrame\\ChatFrameBackground"
 A.SPARK = "Interface\\CastingBar\\UI-CastingBar-Spark"
@@ -55,6 +55,7 @@ A.PARTS = {
 -- short labels: the options window lists them in two columns
 A.MODULES = {
 	{ key = "chrono", label = "Run clock" },
+	{ key = "warnings", label = "Boss warnings" },
 	{ key = "bosses", label = "Boss bars" },
 	{ key = "hero", label = "Hero frame" },
 	{ key = "target", label = "Target frame" },
@@ -75,6 +76,8 @@ A.MODULES = {
 	{ key = "character", label = "Character window" },
 	{ key = "inspect", label = "Inspect window" },
 	{ key = "party", label = "Party and pet" },
+	{ key = "rescue", label = "Downed allies" },
+	{ key = "records", label = "Run records" },
 	{ key = "skin", label = "Tooltips and menus" },
 }
 
@@ -83,10 +86,10 @@ local DEFAULTS = {
 	pos = {},
 	fscale = {},
 	modules = {
-		chrono = true, bosses = true, hero = true, target = true, skills = true, xp = true,
+		chrono = true, warnings = true, records = true, bosses = true, hero = true, target = true, skills = true, xp = true,
 		tally = true, lairs = true, meter = true, banners = true, vignette = true,
 		plates = true, numbers = true, notices = true, loot = true, chat = true, minimap = true,
-		bags = true, character = true, inspect = true, party = true, skin = true,
+		bags = true, character = true, inspect = true, party = true, rescue = true, skin = true,
 	},
 	hideBuild = false,
 	hid = {},
@@ -94,6 +97,8 @@ local DEFAULTS = {
 	meter = { tab = "dmg", rows = 8 },
 	plates = { smart = true },
 	numbers = { taken = true, heals = true, size = 1 },
+	warnSound = true,
+	records = { bests = {}, runs = {}, auto = true },
 }
 
 local function Merge(dst, src)
@@ -714,10 +719,15 @@ SlashCmdList["AETHERHUD"] = function(msg)
 		A.db.scale = A.Clamp(tonumber(rest), 0.5, 2)
 		A.PlaceAll()
 		A.Print("scale " .. A.db.scale)
+	elseif cmd == "runs" or cmd == "records" then
+		if A.ToggleRecords then
+			A.ToggleRecords()
+		end
 	elseif cmd == "help" then
 		A.Print("/aether - options window")
 		A.Print("/aether unlock | lock - move and resize frames")
 		A.Print("/aether demo - sample data to preview the HUD outside a run")
+		A.Print("/aether runs - your run records and personal bests")
 		A.Print("/aether scale 0.9 - overall size;  /aether reset - default layout")
 	elseif A.ToggleOptions then
 		A.ToggleOptions()

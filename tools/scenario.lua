@@ -173,6 +173,49 @@ CHECK("endless: next boss from the run line", hasText(AetherHUDChrono, "0:4"))
 CHECK("no bosses: bars hidden", not hasText(AetherHUDBosses, "Hogger II"))
 CHECK("no lairs: panel hidden", not AetherHUDLairs:IsVisible())
 
+-- boss warning: the last ten seconds before a boss, over the hero
+MOCK.sounds = {}
+MOCK.Addon("AZSBOSSES", "1,180,Hogger,0,dead;2,1006,Mother Fang,0,due;3,1100,Edwin VanCleef,1,due")
+MOCK.Addon("AZSRUN", "t=1000.5;ph=playing;lvl=30;hp=2000;hpm=2400;gold=10;kills=5000;bs=1;bt=3;nb=5.5;nbn=Mother Fang;fin=1100;left=99;endl=0;won=0;lives=1")
+MOCK.Addon("AZSUNITS", "boss,813,Rhahk'Zor,52000,52500,0")
+MOCK.Run(0.3)
+local function warnSounds()
+	local n = 0
+	for _, v in ipairs(MOCK.sounds) do
+		if v == "RaidWarning" then
+			n = n + 1
+		end
+	end
+	return n
+end
+CHECK("boss warning: the last seconds count down", AetherHUDBossWarning:IsVisible() and hasText(AetherHUDBossWarning, "Mother Fang")
+	and hasText(AetherHUDBossWarning, "6") and hasText(AetherHUDBossWarning, "B O S S"), table.concat(shownTexts(AetherHUDBossWarning), " / "))
+CHECK("boss warning: one sound as it starts", warnSounds() == 1, warnSounds())
+MOCK.Run(1.0)
+CHECK("boss warning: counts on, no more sounds", hasText(AetherHUDBossWarning, "5") and warnSounds() == 1)
+MOCK.Run(5.5)
+CHECK("boss warning: gone once the boss is due", not AetherHUDBossWarning:IsVisible())
+MOCK.Addon("AZSUNITS", "boss,813,Rhahk'Zor,52000,52500,1")
+MOCK.Run(0.3)
+CHECK("boss warning: an enrage flashes", AetherHUDBossWarning:IsVisible() and hasText(AetherHUDBossWarning, "Rhahk'Zor")
+	and hasText(AetherHUDBossWarning, "E N R A G E D"), table.concat(shownTexts(AetherHUDBossWarning), " / "))
+MOCK.Run(3.5)
+CHECK("boss warning: and fades", not AetherHUDBossWarning:IsVisible())
+MOCK.Run(0.5)
+CHECK("boss warning: once per enrage", not AetherHUDBossWarning:IsVisible())
+MOCK.Addon("AZSBOSSES", "1,180,Hogger,0,dead;2,1006,Mother Fang,0,dead;3,1016,Edwin VanCleef,1,due")
+MOCK.Run(0.3)
+local warnName
+for _, fs in ipairs(find(AetherHUDBossWarning, function(o) return o.__kind == "FontString" and o.__text == "Edwin VanCleef" end)) do
+	warnName = fs
+end
+CHECK("boss warning: the final boss in gold", hasText(AetherHUDBossWarning, "F I N A L") and warnName
+	and warnName.__tcolor[1] == AetherHUD.C.gold[1], table.concat(shownTexts(AetherHUDBossWarning), " / "))
+MOCK.Addon("AZSRUN", "t=1000;ph=choosing;nb=10;nbn=x")
+MOCK.Run(0.3)
+CHECK("boss warning: not while choosing a card", not AetherHUDBossWarning:IsVisible())
+MOCK.Addon("AZSBOSSES", "1,180,Hogger,0,dead;2,258,Mother Fang,0,due;3,540,Gath'Ilzogg,0,due;4,720,Morgan,0,due;5,960,Edwin VanCleef,1,due")
+
 -- target gone
 MOCK.target = nil
 MOCK.Addon("AZSTGT", "kind=none")
@@ -241,7 +284,7 @@ errs = errorsSoFar()
 MOCK.Slash("/aether", "unlock")
 MOCK.Run(1)
 local overlays = find(AetherHUDRoot, function(o) return o.__kind == "Button" and o.__strata == "DIALOG" end)
-CHECK("unlock shows a mover per frame (" .. table.getn(overlays) .. ")", table.getn(overlays) == 19) -- 2.1: the inspect window
+CHECK("unlock shows a mover per frame (" .. table.getn(overlays) .. ")", table.getn(overlays) == 22) -- 2.1 inspect; 2.2 downed allies; 2.3 boss warning, run record
 for _, o in ipairs(overlays) do
 	MOCK.Script(o, "OnDragStart")
 	MOCK.Script(o, "OnDragStop")
@@ -785,6 +828,62 @@ gameButton:Click()
 CHECK("options: Game options opens the game's window", BenillaOptionsFrame:IsShown() and not AetherHUDOptions:IsShown())
 BenillaOptionsFrame:Hide()
 
+-- downed allies: where they lie, on the minimap's ring, their party frame and a plate
+local DIAMOND = "Interface\\AddOns\\AetherHUD\\media\\diamond"
+local function redGems(frame)
+	local out = {}
+	for _, o in ipairs(find(frame, function(o) return o.__kind == "Texture" and o.__tex == DIAMOND and o.__layer == "OVERLAY" end)) do
+		if o:IsVisible() and o.__color and o.__color[1] == AetherHUD.C.bad[1] and o.__color[2] == AetherHUD.C.bad[2] then
+			table.insert(out, o)
+		end
+	end
+	return out
+end
+MOCK.party = { { name = "Brakka", hp = 0, hpm = 1500, class = "Warrior", token = "WARRIOR", player = true, friend = true,
+	dead = true, map = { 0.45, 0.60 }, dist = 20 } }
+MOCK.Run(0.5)
+CHECK("downed: a plate names them and how far", AetherHUDRescue:IsVisible() and hasText(AetherHUDRescue, "Brakka")
+	and hasText(AetherHUDRescue, "is down") and hasText(AetherHUDRescue, "close"), table.concat(shownTexts(AetherHUDRescue), " / "))
+-- they lie north-east: 0.03 of the map east (x1.5 for its shape) and 0.05 north
+local pin = redGems(AetherHUD.minimapRing.frame)[1]
+local pp = pin and pin.__points[1]
+CHECK("downed: a gem on the minimap's ring points at them", pp and pp[2] == AetherHUD.minimapRing.spot and pp[4] == 52 and pp[5] == 57,
+	pp and (tostring(pp[4]) .. "," .. tostring(pp[5])))
+local dot = redGems(AetherHUDParty1)[1]
+local dp = dot and dot.__points[1]
+CHECK("downed: their party frame says DOWN with a compass", hasText(AetherHUDParty1, "DOWN") and dp and dp[4] > 0 and dp[5] > 0)
+MOCK.party[1].dist = 6
+MOCK.Run(0.3)
+CHECK("downed: in reach next to them", hasText(AetherHUDRescue, "in reach"))
+MOCK.Addon("AZSREVIVE", "down=0;share=0;by=;reviving=Brakka;rshare=0.45")
+MOCK.Run(0.3)
+CHECK("downed: how far along your revive is", hasText(AetherHUDRescue, "bringing back 45%"), table.concat(shownTexts(AetherHUDRescue), " / "))
+MOCK.Addon("AZSREVIVE", "down=0;share=0;by=;reviving=;rshare=0")
+MOCK.cvars.rotateMinimap = "1"
+MOCK.Run(0.3)
+CHECK("downed: no ring gem on a turning minimap", table.getn(redGems(AetherHUD.minimapRing.frame)) == 0 and AetherHUDRescue:IsVisible())
+MOCK.cvars.rotateMinimap = nil
+MOCK.party[1].map = nil
+MOCK.Run(0.3)
+CHECK("downed: place unknown, the plate stays without pointers", AetherHUDRescue:IsVisible() and table.getn(redGems(AetherHUD.minimapRing.frame)) == 0
+	and table.getn(redGems(AetherHUDRescue)) == 0)
+MOCK.party[1].map = { 0.45, 0.60 }
+MOCK.party[1].dead = false
+MOCK.party[1].hp = 1500
+MOCK.Run(0.3)
+CHECK("downed: up again, all gone", not AetherHUDRescue:IsVisible() and table.getn(redGems(AetherHUD.minimapRing.frame)) == 0
+	and not hasText(AetherHUDParty1, "DOWN"))
+-- the game's own "is down" banner, while the client still counts them alive at no health
+MOCK.party[1].hp = 1
+MOCK.Addon("AZSBANNER", "id=40;kind=frienddown;boss=0;name=Brakka;text=Brakka is down! Stand next to them to bring them back.")
+MOCK.Run(0.3)
+CHECK("downed: the game's banner counts too", AetherHUDRescue:IsVisible() and hasText(AetherHUDParty1, "DOWN"))
+MOCK.party[1].hp = 900
+MOCK.Run(0.3)
+CHECK("downed: and health back ends it", not AetherHUDRescue:IsVisible())
+MOCK.party = nil
+MOCK.Run(0.3)
+
 -- the skill bar's menu buttons
 local minis = {}
 for _, o in ipairs(find(AetherHUDSkills, function(o) return o.__kind == "Button" and o.__w == 18 end)) do
@@ -800,6 +899,42 @@ AetherHUDBags:Hide()
 MOCK.Run(0.3)
 CHECK("the rest of the UI: no Lua errors", errorsSoFar() == errs, MOCK.errors[errs + 1])
 
+-- run records: the run's end, the bests per zone and class, the history
+local END1 = "result=dead;t=543;lvl=17;kills=1234;elites=12;guardians=2;bosses=3;dmg=812345;taken=40000;gold=900;chests=6;"
+	.. "magnets=2;endl=0;hero=Utther;class=mage;cname=Mage;race=human;rname=Human;zone=elwynn;zname=Elwynn Forest"
+MOCK.Addon("AZSEND", END1)
+MOCK.Run(0.6)
+local rec = AetherHUD.db.records
+CHECK("records: the record opens when a run ends", AetherHUDRecords:IsShown() and hasText(AetherHUDRecords, "F A L L E N")
+	and hasText(AetherHUDRecords, "1,234") and hasText(AetherHUDRecords, "9:03"), table.concat(shownTexts(AetherHUDRecords), " / "))
+CHECK("records: kept in the history", table.getn(rec.runs) == 1 and rec.runs[1].kills == 1234)
+local b = rec.bests["elwynn:mage"]
+CHECK("records: a first run sets the bests", b and b.kills == 1234 and b.longest == 543 and b.fastest == nil and math.floor(b.dps) == 1496)
+CHECK("records: first records, no NEW BEST yet", hasText(AetherHUDRecords, "first record") and not hasText(AetherHUDRecords, "N E W"))
+MOCK.Run(1.0)
+CHECK("records: once per run", table.getn(rec.runs) == 1)
+AetherHUDRecords:Hide()
+MOCK.Addon("AZSEND", "result=won;t=1001;lvl=31;kills=4210;elites=26;guardians=4;bosses=5;dmg=1830000;taken=61000;gold=800;chests=11;"
+	.. "magnets=3;endl=0;hero=Utther;class=mage;cname=Mage;race=human;rname=Human;zone=elwynn;zname=Elwynn Forest")
+MOCK.Run(0.6)
+CHECK("records: a win", AetherHUDRecords:IsShown() and hasText(AetherHUDRecords, "V I C T O R Y"))
+CHECK("records: NEW BEST where it beat the last", hasText(AetherHUDRecords, "N E W") and hasText(AetherHUDRecords, "best 900"),
+	table.concat(shownTexts(AetherHUDRecords), " / "))
+CHECK("records: a win's time counts as the fastest", b.fastest == 1001 and b.longest == 543 and b.kills == 4210 and b.gold == 900)
+CHECK("records: newest first in the list", rec.runs[1].result == "won" and rec.runs[2].result == "dead")
+CHECK("records: the list on the right", hasText(AetherHUDRecords, "16:41") and hasText(AetherHUDRecords, "R E C E N T"))
+AetherHUDRecords:Hide()
+MOCK.Slash("/aether", "runs")
+CHECK("/aether runs opens it", AetherHUDRecords:IsShown() and hasText(AetherHUDRecords, "V I C T O R Y"))
+MOCK.Slash("/aether", "runs")
+CHECK("/aether runs again closes it", not AetherHUDRecords:IsShown())
+rec.auto = false
+MOCK.Addon("AZSEND", "result=left;t=60;lvl=2;kills=20;dmg=900;gold=5;hero=Utther;class=mage;cname=Mage;zone=duskwood;zname=Duskwood")
+MOCK.Run(0.6)
+CHECK("records: kept but not opened with the option off", table.getn(rec.runs) == 3 and not AetherHUDRecords:IsShown()
+	and rec.bests["duskwood:mage"] ~= nil)
+rec.auto = true
+
 ------------------------------------------------------------------------
 -- Zone change and logout
 ------------------------------------------------------------------------
@@ -813,3 +948,11 @@ CHECK("logout gives the game's HUD back", MOCK.cvars.hudClock == "1" and MOCK.cv
 CHECK("logout gives the client's settings back", MOCK.cvars.CombatDamage == "1" and MOCK.cvars.CombatLogRangeCreature == "50"
 	and MOCK.cvars.CombatLogPeriodicSpells == "0", MOCK.cvars.CombatDamage)
 CHECK("no Lua errors in the whole run", table.getn(MOCK.errors) == 0, MOCK.errors[1])
+-- AetherHUD catches its own errors and prints them to chat, where players see them
+local printed
+for _, m in ipairs(MOCK.chat) do
+	if string.find(m, "error:", 1, true) then
+		printed = printed or m
+	end
+end
+CHECK("no errors printed to chat in the whole run", printed == nil, printed)

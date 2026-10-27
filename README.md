@@ -24,10 +24,16 @@ tells you in chat if one is still on.
 ## What's in it
 
 * **Run clock** with a boss timeline and the next boss's countdown
+* **Boss warnings:** a big countdown over your hero for the last 10 seconds before each
+  boss (the final boss in gold), and a flash when a boss turns enraged
+* **Run records:** when a run ends, its record with your best for that zone and class
+  under each number, NEW BEST where you beat it, and your recent runs (`/aether runs`)
 * **Boss bars** with an enrage glow and debuff timers (click a bar to target the boss)
 * **Enemy health plates** and **floating combat numbers** (crits in gold, spell-school colours)
 * **Hero, target, party and pet frames**, with the game's own right-click menu (whisper,
   invite, trade, follow, inspect, raid marks, leave party)
+* **Downed allies:** when a party member goes down, a red gem on the minimap's ring and a
+  compass on their party frame point to where they lie, and a plate says how far they are
 * An **inspect window** for other heroes: their gear by quality, guild, class and, in a
   party, what they did this run
 * **Skill bar** with cooldowns, rank gems and talent/jewelry timers
@@ -48,6 +54,7 @@ The full feature list and notes are in [AetherHUD/README.md](AetherHUD/README.md
 |---|---|
 | `/aether` | Options: every part on or off, HUD size, number size, meter rows, the game's run settings (store level-ups, buy caches by right-click) and a button to the game's own Options |
 | `/aether unlock` / `lock` | Drag frames, resize with the mouse wheel, right-click to reset one |
+| `/aether runs` | Your run records, personal bests and recent runs |
 | `/aether demo` | Fill every frame with a sample run, to preview and arrange outside a run |
 | `/aether scale 0.9` | Overall size |
 | `/aether reset` | Default layout |
@@ -59,7 +66,7 @@ holds what was used to build and check it:
 
 * `make_media.py` generates the textures in `AetherHUD/media/` (pure Python).
 * `test_harness.py` runs the addon in a mock 1.12 client and checks it against a scripted
-  run (211 checks) plus a lint for Lua 5.1+ syntax the game would reject. It reads the
+  run (243 checks) plus a lint for Lua 5.1+ syntax the game would reject. It reads the
   game's own addon-API code out of your copy of the game, so it needs the path to it:
 
   ```

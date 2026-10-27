@@ -101,7 +101,7 @@ MOCK.Run(0.3)
 
 # Things the full-UI previews add: a party, a pet, gear, bags, stats, a loot line, a notice.
 FULL = r'''
-MOCK.party = { { name = "Friendo", hp = 72, hpm = 100, token = "PRIEST" }, { name = "Brakka", hp = 30, hpm = 100, token = "WARRIOR" } }
+MOCK.party = { { name = "Friendo", hp = 72, hpm = 100, token = "PRIEST" }, { name = "Brakka", hp = 0, hpm = 100, token = "WARRIOR", dead = true, map = { 0.44, 0.62 }, dist = 20 } }
 MOCK.pet = { name = "Water Elemental", hp = 80, hpm = 100 }
 MOCK.equip[1] = { tex = "Interface\Icons\INV_Helmet_01", link = "|cffa335ee|Hitem:10:0:0:0|h[Helm]|h|r" }
 MOCK.equip[5] = { tex = "Interface\Icons\INV_Chest_Cloth_01", link = "|cff0070dd|Hitem:11:0:0:0|h[Robe]|h|r" }
@@ -316,7 +316,7 @@ def main():
     lua.execute(th.extract_api(exe))
     th.load_addon(lua, th.toc_files())
     lua.execute('MOCK.Fire("VARIABLES_LOADED") MOCK.Fire("PLAYER_ENTERING_WORLD") MOCK.Run(0.6)')
-    if mode in ("demo", "windows", "inspect"):
+    if mode in ("demo", "windows", "inspect", "records"):
         lua.execute(WORLD)
         lua.execute(FULL)
         lua.execute('MOCK.Slash("/aether", "demo") MOCK.Run(0.2) AetherHUD.TestBanners() MOCK.Run(1.0)')
@@ -324,6 +324,8 @@ def main():
         lua.execute('ToggleBackpack() ToggleCharacter() MOCK.Run(0.4)')
     elif mode == "inspect":
         lua.execute(INSPECT)
+    elif mode == "records":
+        lua.execute('AetherHUD.ToggleRecords() MOCK.Run(0.3)')
     elif mode == "unlock":
         lua.execute('MOCK.Slash("/aether", "unlock") MOCK.Run(1.0)')
     elif mode == "options":
@@ -350,7 +352,7 @@ def main():
     # one draw order across every root, as the client draws them: strata, level, layer
     py.sort(key=lambda d: (d["strata"], d["level"], d["layer"], d["seq"]))
     chat = []
-    if mode in ("demo", "windows", "inspect"):
+    if mode in ("demo", "windows", "inspect", "records"):
         chat = CHAT_LINES
     render(py, out, "AetherHUD preview (%s)" % mode, mobs, chat)
     print("wrote", out, len(py), "items")

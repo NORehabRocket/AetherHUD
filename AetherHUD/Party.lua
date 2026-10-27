@@ -1,7 +1,7 @@
 -- AetherHUD party and pet: your co-op friends as slim glass frames down the left (class
 -- coloured, health with the same easing trail as yours, down/offline states; click to
--- target, right-click for the game's menu) and your pet beside the hero frame. Replaces the
--- stock party and pet frames.
+-- target, right-click for the game's menu; a compass to them while they are down) and your
+-- pet beside the hero frame. Replaces the stock party and pet frames.
 
 local A = AetherHUD
 local C = A.C
@@ -38,6 +38,11 @@ local function Member(i)
 	m.state:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -7)
 	m.bar = A.Bar(f, PW - 16, 10, C.friend1, C.friend2)
 	m.bar.frame:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 7)
+	-- while they are down: a compass to where they lie (Rescue.lua)
+	m.compass = A.Compass(f, 14)
+	m.compass.frame:SetPoint("TOPRIGHT", f, "TOPRIGHT", -46, -5)
+	m.compass.frame:Hide()
+	m.compass.frame.aS = false
 	members[i] = m
 	return m
 end
@@ -52,19 +57,23 @@ local function UpdateMember(m)
 	if max <= 0 then
 		max = 1
 	end
+	local bearing
 	if not UnitIsConnected(u) then
 		A.SetText(m.state, "offline")
 		A.SetTextColor(m.state, C.muted)
 		m.bar:SetValue(0)
-	elseif UnitIsDead(u) or UnitIsGhost(u) then
+	elseif UnitIsDead(u) or UnitIsGhost(u) or A.IsDown(u) then
 		A.SetText(m.state, "DOWN")
 		A.SetTextColor(m.state, C.bad)
 		m.bar:SetValue(0)
+		bearing = A.On("rescue") and A.Bearing(u)
 	else
 		A.SetText(m.state, string.format("%d%%", math.floor(hp / max * 100 + 0.5)))
 		A.SetTextColor(m.state, C.text)
 		m.bar:SetValue(hp / max)
 	end
+	m.compass:Point(bearing or nil)
+	A.Show(m.compass.frame, bearing and true or false)
 end
 
 local function UpdateParty()

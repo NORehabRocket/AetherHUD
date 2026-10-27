@@ -1,4 +1,4 @@
-# AetherHUD 2.1
+# AetherHUD 2.3
 
 A complete Aion-styled interface for **Azeroth Survivors**: navy glass panels, aether-cyan
 glints, gold corner brackets, round portraits in gold bezels, diamond gems and winged
@@ -19,6 +19,7 @@ in the AddOns list; if one is still on, AetherHUD says so in chat.
 | Frame | Where | Replaces |
 |---|---|---|
 | Run clock: zone, clock, a boss timeline (a diamond for each boss at the time it comes: grey = to come, red glow = alive now, dim = slain, gold = the final boss) and the next boss's countdown, red in its last 10 s. Hover it for the list | top centre | the game's clock |
+| Boss warning: the last 10 seconds before each boss as a big countdown with its name (red, the final boss in gold) and the raid-warning sound as it starts; a short ENRAGED flash when a boss turns enraged | over your hero | (new) |
 | Boss bars: every boss alive and every awake guardian, with health, an ENRAGED glow and debuffs counting down. Click one to target it | under the clock | the game's boss bars |
 | Banners: every announcement the game makes, and new zones, as winged notices | centre | the game's banners, stock zone text |
 | System messages: errors and notices ("Not enough gold...") as a calm line that fades | under the banners | the stock red/yellow error text, raid warnings |
@@ -31,6 +32,7 @@ in the AddOns list; if one is still on, AetherHUD says so in chat.
 | Level Up button: stored level-ups, opened one by one | right of the experience bar | the game's Level Up! button |
 | Revive bar: a party revive in progress, either way | centre | the game's revive bar |
 | Low-health glow: the screen edges glow red below 35% health | full screen | (new) |
+| Run record: when a run ends, its result, then time, level, kills, damage per second, damage, gold, bosses, elites, guardians, caches, damage taken and magnets. Under each, your best for that zone and class, or a gold NEW BEST where this run beat it (time counts the fastest win, or in a lost run the longest you lasted). Your last 30 runs on the right; click one to see it. `/aether runs` opens it any time | left of centre | (new) |
 
 ## You and your party
 
@@ -40,6 +42,7 @@ in the AddOns list; if one is still on, AetherHUD says so in chat.
 | Pet frame | beside the hero | stock pet frame |
 | Party frames: class-coloured names, health, down and offline | left | stock party frames |
 | Target frame: what the target is to the run, its real health, its debuffs; another hero gets an Inspect button | above the skill bar | stock target frame |
+| Downed allies: when a party member goes down, a plate names them with how far they are (in reach, close, in sight, far) or how far along your revive is. A pulsing red gem on the minimap's ring and a small compass on their party frame point to where they lie. Both are north-up like the minimap, since the camera turns and an addon can't tell which way it faces | over the target frame; on the minimap; on the party frame | (new) |
 
 Click any of these to target that unit, right-click it for the game's own unit menu, the
 one the stock frames open: whisper, invite, trade, follow, duel, inspect, raid marks, loot
@@ -96,9 +99,13 @@ AetherHUD turns them on, and `V` toggles them as usual.
   meter rows, whether full-health enemies get plates, and whether damage taken and
   healing show as numbers. It also has the game's own run settings (store level-ups for
   the Level Up button, buy caches only by right-clicking them, no spell effects; they are
-  the same settings the game's Options window keeps) and a button to the game's Options.
+  the same settings the game's Options window keeps), whether boss warnings play a sound,
+  whether the run record opens by itself when a run ends, and buttons to the game's Options
+  and to your run records.
 * `/aether unlock` lets you drag frames, resize one with the mouse wheel, or right-click
   it to reset it. `/aether lock` when done.
+* `/aether runs` opens your run records: the last run, your bests and your recent runs.
+  Bests are per zone and class (endless runs apart) and shared by every hero on the account.
 * `/aether demo` fills every frame with a sample run (with sample combat numbers, banners
   and a loot card), so you can see and arrange the HUD outside a run.
 * `/aether scale 0.9` sets the overall size. `/aether reset` restores the default layout.

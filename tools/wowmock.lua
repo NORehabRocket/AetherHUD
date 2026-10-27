@@ -80,7 +80,7 @@ MOCK = {
 		CombatLogRangeCreature = "50", CombatLogRangeHostilePlayers = "50", CombatLogRangeHostilePlayersPets = "50",
 		CombatLogRangeParty = "50", CombatLogRangePartyPet = "50",
 		-- the game's run settings (no noSpellEffects: its options row must stay away)
-		storeLevels = "0", cacheOnClick = "0",
+		storeLevels = "0", cacheOnClick = "0", spendLevels = "0",
 	},
 	player = { name = "Utther", hp = 1800, hpm = 2400, level = 17, class = "Mage", token = "MAGE", race = "Human", xp = 100, xpm = 1000 },
 	target = nil, -- { name, hp, hpm, level, dead, player, friend, classification }
@@ -478,8 +478,19 @@ new("Button", "TalentMicroButton", MainMenuBarArtFrame)
 
 function getglobal(n) return _G[n] end
 function setglobal(n, v) _G[n] = v end
-function SetCVar(k, v) MOCK.cvars[k] = tostring(v) end
-function GetCVar(k) return MOCK.cvars[k] end
+-- as in the client: a CVar it doesn't have is an error, not nil
+function SetCVar(k, v)
+	if MOCK.cvars[k] == nil then
+		error("Couldn't find CVar named '" .. tostring(k) .. "'")
+	end
+	MOCK.cvars[k] = tostring(v)
+end
+function GetCVar(k)
+	if MOCK.cvars[k] == nil then
+		error("Couldn't find CVar named '" .. tostring(k) .. "'")
+	end
+	return MOCK.cvars[k]
+end
 function ReloadUI() MOCK.reloaded = true end
 function ToggleCharacter() MOCK.character = true end
 function ToggleTalentFrame() MOCK.talents = true end

@@ -190,6 +190,18 @@ local function Build()
 	end, function(v)
 		A.db.numbers.heals = v
 	end)
+	y = y - ROW
+	Toggle(y, "Boss warnings: a sound as the countdown starts", function()
+		return A.db.warnSound
+	end, function(v)
+		A.db.warnSound = v
+	end)
+	y = y - ROW
+	Toggle(y, "Run records: open when a run ends", function()
+		return A.db.records.auto
+	end, function(v)
+		A.db.records.auto = v
+	end)
 	-- the game's own run settings, the same ones its Options window keeps
 	for i = 1, table.getn(GAME) do
 		local cvar, label = GAME[i][1], GAME[i][2]
@@ -252,6 +264,12 @@ local function Build()
 			ShowUIPanel(BenillaOptionsFrame)
 		elseif GameMenuFrame then
 			ShowUIPanel(GameMenuFrame)
+		end
+	end)
+	Button("Run records", W - 154, y, 140, function()
+		f:Hide()
+		if A.ToggleRecords then
+			A.ToggleRecords()
 		end
 	end)
 	notice = A.Text(f, 9)

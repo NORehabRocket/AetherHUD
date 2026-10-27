@@ -434,3 +434,37 @@ function Row:Set(list, anchorFn)
 	end
 	return n
 end
+
+-- A small north-up compass: a ring, a gold north tick and a gem on the rim at a bearing
+-- (radians clockwise from north). Moving the gem needs no rotated texture, only an anchor.
+local Compass = {}
+Compass.__index = Compass
+
+function A.Compass(parent, size)
+	local f = CreateFrame("Frame", nil, parent)
+	f:SetWidth(size)
+	f:SetHeight(size)
+	local ring = Tex(f, "BORDER", A.MEDIA .. "ring")
+	ring:SetAllPoints(f)
+	ring:SetVertexColor(C.steel[1], C.steel[2], C.steel[3], 0.9)
+	local north = A.Diamond(f, math.max(4, math.floor(size * 0.28)), C.gold, "ARTWORK")
+	north:SetPoint("CENTER", f, "TOP", 0, 0)
+	local dot = A.Diamond(f, math.max(5, math.floor(size * 0.45)), C.bad, "OVERLAY")
+	return setmetatable({ frame = f, dot = dot, r = size / 2 - 1 }, Compass)
+end
+
+-- bearing nil: no gem (where they are is not known)
+function Compass:Point(bearing)
+	if not bearing then
+		A.Show(self.dot, false)
+		return
+	end
+	A.Show(self.dot, true)
+	local x = math.floor(self.r * math.sin(bearing) + 0.5)
+	local y = math.floor(self.r * math.cos(bearing) + 0.5)
+	if self.x ~= x or self.y ~= y then
+		self.x, self.y = x, y
+		self.dot:ClearAllPoints()
+		self.dot:SetPoint("CENTER", self.frame, "CENTER", x, y)
+	end
+end

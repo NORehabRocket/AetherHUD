@@ -152,6 +152,12 @@ local function Init()
 	n:SetTextColor(0.15, 0.1, 0.02)
 	n:SetShadowOffset(0, 0)
 
+	-- pointers on the ring (Rescue.lua's downed allies): a frame over it and the ring's radius
+	local pins = CreateFrame("Frame", nil, over)
+	pins:SetAllPoints(over)
+	pins:SetFrameLevel(over:GetFrameLevel() + 2)
+	A.minimapRing = { frame = pins, spot = spot, rim = SIZE / 2 + (RING - SIZE) / 4 }
+
 	-- the plate: zone, coordinates, time (the zone is cut, never wrapped)
 	plate = A.Panel(nil, holder, RING, 22, { bracket = 5, noGlint = true })
 	plate:SetPoint("BOTTOM", holder, "BOTTOM", 0, 0)

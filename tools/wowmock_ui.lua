@@ -159,7 +159,32 @@ WorldMapFrame = F("Frame", "WorldMapFrame")
 WorldMapFrame:Hide()
 function GetMinimapZoneText() return "Goldshire" end
 function GetZoneText() return "Elwynn Forest" end
-function GetPlayerMapPosition() return 0.42, 0.65 end
+-- you at 42,65; a party member at their `map` { x, y } (0,0: not known), `dist` yards away
+function GetPlayerMapPosition(u)
+	if u == "player" then
+		return 0.42, 0.65
+	end
+	local _, _, n = string.find(u or "", "^party(%d)$")
+	local d = n and MOCK.party and MOCK.party[tonumber(n)]
+	if d and d.map then
+		return d.map[1], d.map[2]
+	end
+	return 0, 0
+end
+local function PartyData(u)
+	local _, _, n = string.find(u or "", "^party(%d)$")
+	return n and MOCK.party and MOCK.party[tonumber(n)]
+end
+-- 1.12's ranges: 3 duel (~10 yd), 4 follow (28 yd)
+function CheckInteractDistance(u, which)
+	local d = PartyData(u)
+	local dist = d and d.dist or 1000
+	return (which == 3 and dist <= 10 or which == 4 and dist <= 28) and 1 or nil
+end
+function UnitIsVisible(u)
+	local d = PartyData(u)
+	return (not d or (d.dist or 0) <= 100) and 1 or nil
+end
 function SetMapToCurrentZone() MOCK.mapSet = true end
 date = os.date
 
@@ -363,3 +388,6 @@ function IsControlKeyDown() return MOCK.ctrl end
 function DressUpItemLink(link) MOCK.dressedUp = link end
 BenillaOptionsFrame = F("Frame", "BenillaOptionsFrame")
 BenillaOptionsFrame:Hide()
+
+MOCK.sounds = {}
+function PlaySound(name) table.insert(MOCK.sounds, name) end
