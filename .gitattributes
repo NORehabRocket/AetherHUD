@@ -1,0 +1,6 @@
+*.tga binary
+*.ttf binary
+*.webp binary
+*.lua text
+*.py text
+*.md text

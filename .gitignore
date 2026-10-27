@@ -1,0 +1,8 @@
+# release builds go on GitHub Releases, not in the repo
+AetherHUD.zip
+
+# generated layout previews (large, rebuilt by tools/render_preview.py)
+preview-*.html
+
+__pycache__/
+*.pyc
